@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase, Project } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -7,10 +8,16 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'customer'>('customer');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    localStorage.removeItem('currentProjectId');
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (role === 'admin') {
       if (username === 'admin' && password === '1234554321') {
@@ -18,23 +25,33 @@ export default function Login() {
       } else {
         setError('运营账号或密码错误');
       }
+      setLoading(false);
     } else {
       if (username && password) {
-        const savedProjects = localStorage.getItem('projects');
-        if (savedProjects) {
-          const projects = JSON.parse(savedProjects);
-          const hasProject = projects.length > 0;
-          if (hasProject) {
+        try {
+          const { data: projects, error: fetchError } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (fetchError) throw fetchError;
+
+          if (projects && projects.length > 0) {
+            const projectId = projects[0].id;
+            localStorage.setItem('currentProjectId', projectId.toString());
             navigate('/dashboard');
           } else {
             navigate('/project/apply');
           }
-        } else {
+        } catch (err) {
+          console.error('Login error:', err);
           navigate('/project/apply');
         }
       } else {
         setError('请输入用户名和密码');
       }
+      setLoading(false);
     }
   };
 
@@ -110,9 +127,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium rounded-lg hover:from-pink-600 hover:to-red-600 transition-all shadow-lg hover:shadow-xl"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium rounded-lg hover:from-pink-600 hover:to-red-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
           >
-            登录
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
 

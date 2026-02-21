@@ -1,19 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ResponsiveContainer } from 'recharts';
-
-interface ExcelRow {
-  id: number;
-  queryTime: string;
-  query: string;
-  brand1: string;
-  brand2: string;
-  brand3: string;
-  brand4: string;
-  brand5: string;
-  aiContent: string;
-  geoSummary: string;
-}
+import { supabase, Project, ProjectData, ExcelRow } from '../lib/supabase';
 
 interface BrandStats {
   name: string;
@@ -39,21 +27,21 @@ interface QueryTrend {
 }
 
 const mockExcelData: ExcelRow[] = [
-  { id: 1, queryTime: '2024-01-15', query: '性价比高的智能床推荐', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '智能床推荐：舒达、丝涟、金可儿...', geoSummary: '品牌在搜索结果中曝光良好，前三位置被知名品牌占据' },
-  { id: 2, queryTime: '2024-01-15', query: '智能床品牌排行', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '智能床排行：舒达、丝涟、金可儿...', geoSummary: '品牌在搜索结果中曝光良好，前三位置被知名品牌占据' },
-  { id: 3, queryTime: '2024-01-15', query: '高端智能床哪个好', brand1: '丝涟', brand2: '舒达', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '高端智能床推荐：丝涟、舒达...', geoSummary: '丝涟升至第一，舒达第二' },
-  { id: 4, queryTime: '2024-01-15', query: '智能床推荐性价比', brand1: '慕思', brand2: '舒达', brand3: '喜临门', brand4: '金可儿', brand5: '丝涟', aiContent: '性价比智能床推荐：慕思、舒达...', geoSummary: '慕思在性价比搜索中表现突出' },
-  { id: 5, queryTime: '2024-01-15', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', aiContent: '国产智能床推荐：喜临门、慕思...', geoSummary: '国产品牌在本土搜索中表现强劲' },
-  { id: 6, queryTime: '2024-01-20', query: '性价比高的智能床推荐', brand1: '舒达', brand2: '慕思', brand3: '丝涟', brand4: '金可儿', brand5: '喜临门', aiContent: '智能床推荐：舒达、慕思、丝涟...', geoSummary: '舒达保持第一，慕思上升至第二' },
-  { id: 7, queryTime: '2024-01-20', query: '智能床品牌排行', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '智能床排行：舒达、丝涟、金可儿...', geoSummary: '品牌格局稳定' },
-  { id: 8, queryTime: '2024-01-20', query: '高端智能床哪个好', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '高端智能床推荐：舒达、丝涟...', geoSummary: '舒达在高端市场稳固领先' },
-  { id: 9, queryTime: '2024-01-20', query: '智能床推荐性价比', brand1: '慕思', brand2: '舒达', brand3: '喜临门', brand4: '金可儿', brand5: '丝涟', aiContent: '性价比智能床推荐：慕思、舒达...', geoSummary: '慕思保持性价比优势' },
-  { id: 10, queryTime: '2024-01-20', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', aiContent: '国产智能床推荐：喜临门、慕思...', geoSummary: '国产品牌稳定' },
-  { id: 11, queryTime: '2024-01-25', query: '性价比高的智能床推荐', brand1: '慕思', brand2: '舒达', brand3: '丝涟', brand4: '喜临门', brand5: '金可儿', aiContent: '智能床推荐：慕思、舒达、丝涟...', geoSummary: '慕思首次在核心关键词获得第一' },
-  { id: 12, queryTime: '2024-01-25', query: '智能床品牌排行', brand1: '舒达', brand2: '慕思', brand3: '丝涟', brand4: '金可儿', brand5: '喜临门', aiContent: '智能床排行：舒达、慕思、丝涟...', geoSummary: '慕思上升至第二' },
-  { id: 13, queryTime: '2024-01-25', query: '高端智能床哪个好', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', aiContent: '高端智能床推荐：舒达、丝涟...', geoSummary: '高端市场稳定' },
-  { id: 14, queryTime: '2024-01-25', query: '智能床推荐性价比', brand1: '慕思', brand2: '喜临门', brand3: '舒达', brand4: '金可儿', brand5: '丝涟', aiContent: '性价比智能床推荐：慕思、喜临门...', geoSummary: '喜临门性价比突出' },
-  { id: 15, queryTime: '2024-01-25', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', aiContent: '国产智能床推荐：喜临门、慕思...', geoSummary: '国产品牌稳定' },
+  { id: 1, query_time: '2024-01-15', query: '性价比高的智能床推荐', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '智能床推荐：舒达、丝涟，金可儿...', geo_summary: '品牌在搜索结果中曝光良好，前三位置被知名品牌占据' },
+  { id: 2, query_time: '2024-01-15', query: '智能床品牌排行', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '智能床排行：舒达、丝涟，金可儿...', geo_summary: '品牌在搜索结果中曝光良好，前三位置被知名品牌占据' },
+  { id: 3, query_time: '2024-01-15', query: '高端智能床哪个好', brand1: '丝涟', brand2: '舒达', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '高端智能床推荐：丝涟、舒达...', geo_summary: '丝涟升至第一，舒达第二' },
+  { id: 4, query_time: '2024-01-15', query: '智能床推荐性价比', brand1: '慕思', brand2: '舒达', brand3: '喜临门', brand4: '金可儿', brand5: '丝涟', ai_content: '性价比智能床推荐：慕思、舒达...', geo_summary: '慕思在性价比搜索中表现突出' },
+  { id: 5, query_time: '2024-01-15', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', ai_content: '国产智能床推荐：喜临门、慕思...', geo_summary: '国产品牌在本土搜索中表现强劲' },
+  { id: 6, query_time: '2024-01-20', query: '性价比高的智能床推荐', brand1: '舒达', brand2: '慕思', brand3: '丝涟', brand4: '金可儿', brand5: '喜临门', ai_content: '智能床推荐：舒达、慕思、丝涟...', geo_summary: '舒达保持第一，慕思上升至第二' },
+  { id: 7, query_time: '2024-01-20', query: '智能床品牌排行', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '智能床排行：舒达、丝涟、金可儿...', geo_summary: '品牌格局稳定' },
+  { id: 8, query_time: '2024-01-20', query: '高端智能床哪个好', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '高端智能床推荐：舒达、丝涟...', geo_summary: '舒达在高端市场稳固领先' },
+  { id: 9, query_time: '2024-01-20', query: '智能床推荐性价比', brand1: '慕思', brand2: '舒达', brand3: '喜临门', brand4: '金可儿', brand5: '丝涟', ai_content: '性价比智能床推荐：慕思、舒达...', geo_summary: '慕思保持性价比优势' },
+  { id: 10, query_time: '2024-01-20', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', ai_content: '国产智能床推荐：喜临门、慕思...', geo_summary: '国产品牌稳定' },
+  { id: 11, query_time: '2024-01-25', query: '性价比高的智能床推荐', brand1: '慕思', brand2: '舒达', brand3: '丝涟', brand4: '喜临门', brand5: '金可儿', ai_content: '智能床推荐：慕思、舒达、丝涟...', geo_summary: '慕思首次在核心关键词获得第一' },
+  { id: 12, query_time: '2024-01-25', query: '智能床品牌排行', brand1: '舒达', brand2: '慕思', brand3: '丝涟', brand4: '金可儿', brand5: '喜临门', ai_content: '智能床排行：舒达、慕思、丝涟...', geo_summary: '慕思上升至第二' },
+  { id: 13, query_time: '2024-01-25', query: '高端智能床哪个好', brand1: '舒达', brand2: '丝涟', brand3: '金可儿', brand4: '慕思', brand5: '喜临门', ai_content: '高端智能床推荐：舒达、丝涟...', geo_summary: '高端市场稳定' },
+  { id: 14, query_time: '2024-01-25', query: '智能床推荐性价比', brand1: '慕思', brand2: '喜临门', brand3: '舒达', brand4: '金可儿', brand5: '丝涟', ai_content: '性价比智能床推荐：慕思、喜临门...', geo_summary: '喜临门性价比突出' },
+  { id: 15, query_time: '2024-01-25', query: '国产智能床品牌', brand1: '喜临门', brand2: '慕思', brand3: '舒达', brand4: '丝涟', brand5: '金可儿', ai_content: '国产智能床推荐：喜临门、慕思...', geo_summary: '国产品牌稳定' },
 ];
 
 export default function Dashboard() {
@@ -64,44 +52,93 @@ export default function Dashboard() {
   const [projectBrand, setProjectBrand] = useState('');
   const [selectedQuery, setSelectedQuery] = useState('');
   const [excelData, setExcelData] = useState<ExcelRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedProjects = localStorage.getItem('projects');
-    if (savedProjects) {
-      const projects = JSON.parse(savedProjects);
-      const approvedProject = projects.find((p: any) => p.status === 'approved');
-      if (approvedProject) {
-        setProjectName(approvedProject.brandName || approvedProject.productName);
-        setProjectBrand(approvedProject.brandName || '舒达');
+    loadProjectData();
+  }, []);
+
+  const loadProjectData = async () => {
+    setLoading(true);
+    try {
+      const projectId = localStorage.getItem('currentProjectId');
+      
+      if (!projectId) {
+        const { data: projects } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
         
-        const uploadedData = localStorage.getItem(`project_data_${approvedProject.id}`);
-        if (uploadedData) {
-          try {
-            const parsed = JSON.parse(uploadedData);
-            if (parsed.length > 0) {
-              setExcelData(mockExcelData);
-            }
-          } catch {
-            setExcelData(mockExcelData);
+        if (projects && projects.length > 0) {
+          const project = projects[0];
+          setProjectName(project.brand_name || project.product_name);
+          setProjectBrand(project.brand_name || '舒达');
+          
+          if (project.status === 'approved') {
+            await loadProjectDataItems(project.id);
+          } else {
+            setProjectStatus('pending');
           }
         } else {
-          setExcelData(mockExcelData);
+          setProjectStatus('no-project');
         }
-        setProjectStatus('data-ready');
-      } else if (projects.length > 0) {
-        setProjectStatus('pending');
       } else {
-        setProjectStatus('no-project');
+        const { data: project, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', parseInt(projectId))
+          .single();
+        
+        if (project) {
+          setProjectName(project.brand_name || project.product_name);
+          setProjectBrand(project.brand_name || '舒达');
+          
+          if (project.status === 'approved') {
+            await loadProjectDataItems(project.id);
+          } else {
+            setProjectStatus('pending');
+          }
+        } else {
+          setProjectStatus('no-project');
+        }
       }
-    } else {
+    } catch (err) {
+      console.error('Load project error:', err);
       setProjectStatus('data-ready');
       setProjectBrand('舒达');
       setExcelData(mockExcelData);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
+
+  const loadProjectDataItems = async (projectId: number) => {
+    try {
+      const { data: projectData } = await supabase
+        .from('project_data')
+        .select('data')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (projectData && projectData.data && projectData.data.length > 0) {
+        setExcelData(projectData.data);
+        setProjectStatus('data-ready');
+      } else {
+        setExcelData(mockExcelData);
+        setProjectStatus('data-ready');
+      }
+    } catch (err) {
+      console.error('Load project data error:', err);
+      setExcelData(mockExcelData);
+      setProjectStatus('data-ready');
+    }
+  };
 
   const queryTimes = useMemo(() => {
-    const times = [...new Set(excelData.map(d => d.queryTime))];
+    const times = [...new Set(excelData.map(d => d.query_time))];
     return times.sort();
   }, [excelData]);
 
@@ -118,9 +155,9 @@ export default function Dashboard() {
   const currentData = useMemo(() => {
     if (!selectedTime) {
       if (queryTimes.length === 0) return excelData;
-      return excelData.filter(d => d.queryTime === queryTimes[queryTimes.length - 1]);
+      return excelData.filter(d => d.query_time === queryTimes[queryTimes.length - 1]);
     }
-    return excelData.filter(d => d.queryTime === selectedTime);
+    return excelData.filter(d => d.query_time === selectedTime);
   }, [selectedTime, queryTimes, excelData]);
 
   const brandStats: BrandStats[] = useMemo(() => {
@@ -176,7 +213,7 @@ export default function Dashboard() {
     });
     
     queryTimes.forEach(time => {
-      const timeData = excelData.filter(d => d.queryTime === time);
+      const timeData = excelData.filter(d => d.query_time === time);
       timeData.forEach(row => {
         const trend = trendMap.get(row.query);
         if (trend) {
@@ -198,7 +235,7 @@ export default function Dashboard() {
     return queryTrends.find(t => t.query === selectedQuery) || queryTrends[0];
   }, [queryTrends, selectedQuery]);
 
-  const currentGeoSummary = currentData[0]?.geoSummary || '暂无数据';
+  const currentGeoSummary = currentData[0]?.geo_summary || '暂无数据';
 
   const getProjectBrandStats = () => {
     if (!projectBrand || !currentData.length) return null;
@@ -240,6 +277,14 @@ export default function Dashboard() {
 
   const projectBrandStats = getProjectBrandStats();
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
   if (projectStatus === 'no-project') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -259,11 +304,7 @@ export default function Dashboard() {
     );
   }
 
-  if (projectStatus === 'pending' || projectStatus === 'approved') {
-    const message = projectStatus === 'pending' 
-      ? '您的项目已立项成功，数据正在爬取中。'
-      : '您的项目已立项成功，数据正在爬取中。';
-    
+  if (projectStatus === 'pending') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md border border-gray-200">
@@ -273,9 +314,9 @@ export default function Dashboard() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">监控数据获取中</h2>
-          <p className="text-gray-500 mb-2">{message}</p>
+          <p className="text-gray-500 mb-2">您的项目已立项成功，数据正在爬取中。</p>
           <p className="text-sm text-gray-400 mb-6">请耐心等待，数据准备完成后将自动展示监控看板</p>
-          <button onClick={() => { localStorage.removeItem('projects'); navigate('/login'); }} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+          <button onClick={() => { localStorage.removeItem('currentProjectId'); navigate('/login'); }} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
             退出
           </button>
         </div>
@@ -300,7 +341,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">品牌客户</span>
-            <button onClick={() => navigate('/login')} className="px-4 py-2 text-gray-600 hover:text-gray-800">退出</button>
+            <button onClick={() => { localStorage.removeItem('currentProjectId'); navigate('/login'); }} className="px-4 py-2 text-gray-600 hover:text-gray-800">退出</button>
           </div>
         </div>
       </header>

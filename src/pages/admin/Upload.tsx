@@ -1,26 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-interface Project {
-  id: number;
-  brandName: string;
-  productName: string;
-  industry: string;
-  status: 'pending' | 'approved';
-  submitTime: string;
-}
+import { supabase, Project } from '../../lib/supabase';
 
 export default function ProjectList() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedProjects = localStorage.getItem('projects');
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    }
+    loadProjects();
   }, []);
+
+  const loadProjects = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (err) {
+      console.error('Load projects error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProjects = projects.filter(p => {
     if (filter === 'all') return true;
@@ -71,7 +78,7 @@ export default function ProjectList() {
                 </svg>
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
+            <p className="text-2xl font-bold text-gray-800">{loading ? '...' : projects.length}</p>
           </div>
 
           <div 
@@ -86,7 +93,7 @@ export default function ProjectList() {
                 </svg>
               </div>
             </div>
-            <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
+            <p className="text-2xl font-bold text-gray-800">{loading ? '...' : pendingCount}</p>
           </div>
 
           <div 
@@ -101,54 +108,32 @@ export default function ProjectList() {
                 </svg>
               </div>
             </div>
-            <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
+            <p className="text-2xl font-bold text-gray-800">{loading ? '...' : approvedCount}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {filter === 'all' ? '全部项目' : filter === 'pending' ? '待审核项目' : '已立项项目'}
-            </h2>
-          </div>
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-6">项目列表</h2>
           
-          {filteredProjects.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              暂无项目
-            </div>
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">加载中...</div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">暂无项目</div>
           ) : (
-            <div className="divide-y">
+            <div className="space-y-4">
               {filteredProjects.map((project) => (
                 <div
                   key={project.id}
-                  className="p-6 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
                   onClick={() => navigate(`/admin/project/${project.id}`)}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      project.status === 'pending' ? 'bg-yellow-100' : 'bg-green-100'
-                    }`}>
-                      {project.status === 'pending' ? (
-                        <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-800">{project.brandName}</h3>
-                      <p className="text-sm text-gray-500">{project.productName} · {project.industry}</p>
-                    </div>
+                  <div>
+                    <h3 className="font-medium text-gray-800">{project.brand_name}</h3>
+                    <p className="text-sm text-gray-500">{project.product_name}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-400">{project.submitTime}</span>
                     <span className={`px-3 py-1 rounded-full text-sm ${
-                      project.status === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-700' 
-                        : 'bg-green-100 text-green-700'
+                      project.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
                     }`}>
                       {project.status === 'pending' ? '待审核' : '已立项'}
                     </span>

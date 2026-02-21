@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 
 interface FormData {
   industry: string;
@@ -100,26 +101,40 @@ export default function ProjectApplication() {
   const [activeModule, setActiveModule] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
-    const newProject = {
-      id: Date.now(),
-      brandName: formData.brandName || formData.productName,
-      productName: formData.productName,
-      industry: formData.industry,
-      status: 'pending' as const,
-      submitTime: new Date().toLocaleString('zh-CN'),
-      formData: formData,
-    };
-    
-    const existingProjects = JSON.parse(localStorage.getItem('projects') || '[]');
-    localStorage.setItem('projects', JSON.stringify([newProject, ...existingProjects]));
-    
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          brand_name: formData.brandName || formData.productName,
+          product_name: formData.productName,
+          industry: formData.industry,
+          status: 'pending',
+          form_data: formData,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        localStorage.setItem('currentProjectId', data.id.toString());
+      }
+      
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Submit error:', err);
+      alert('提交失败，请重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderModuleForm = () => {
