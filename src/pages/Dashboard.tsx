@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ResponsiveContainer } from 'recharts';
 
 interface ExcelRow {
   id: number;
@@ -26,6 +26,7 @@ interface BrandStats {
   frequency: number;
   avgPosition: number;
   exposureRate: number;
+  firstPositionRate: number;
 }
 
 interface QueryTrend {
@@ -62,15 +63,7 @@ export default function Dashboard() {
   const [selectedTime, setSelectedTime] = useState('');
   const [projectBrand, setProjectBrand] = useState('');
   const [selectedQuery, setSelectedQuery] = useState('');
-
-  const queryTimes = useMemo(() => {
-    const times = [...new Set(mockExcelData.map(d => d.queryTime))];
-    return times.sort();
-  }, []);
-
-  const allQueries = useMemo(() => {
-    return [...new Set(mockExcelData.map(d => d.query))];
-  }, []);
+  const [excelData, setExcelData] = useState<ExcelRow[]>([]);
 
   useEffect(() => {
     const savedProjects = localStorage.getItem('projects');
@@ -80,7 +73,20 @@ export default function Dashboard() {
       if (approvedProject) {
         setProjectName(approvedProject.brandName || approvedProject.productName);
         setProjectBrand(approvedProject.brandName || '舒达');
-        setSelectedQuery(allQueries[0] || '');
+        
+        const uploadedData = localStorage.getItem(`project_data_${approvedProject.id}`);
+        if (uploadedData) {
+          try {
+            const parsed = JSON.parse(uploadedData);
+            if (parsed.length > 0) {
+              setExcelData(mockExcelData);
+            }
+          } catch {
+            setExcelData(mockExcelData);
+          }
+        } else {
+          setExcelData(mockExcelData);
+        }
         setProjectStatus('data-ready');
       } else if (projects.length > 0) {
         setProjectStatus('pending');
@@ -90,14 +96,32 @@ export default function Dashboard() {
     } else {
       setProjectStatus('data-ready');
       setProjectBrand('舒达');
-      setSelectedQuery(allQueries[0] || '');
+      setExcelData(mockExcelData);
     }
-  }, [allQueries]);
+  }, []);
+
+  const queryTimes = useMemo(() => {
+    const times = [...new Set(excelData.map(d => d.queryTime))];
+    return times.sort();
+  }, [excelData]);
+
+  const allQueries = useMemo(() => {
+    return [...new Set(excelData.map(d => d.query))];
+  }, [excelData]);
+
+  useEffect(() => {
+    if (allQueries.length > 0 && !selectedQuery) {
+      setSelectedQuery(allQueries[0]);
+    }
+  }, [allQueries, selectedQuery]);
 
   const currentData = useMemo(() => {
-    if (!selectedTime) return mockExcelData.filter(d => d.queryTime === queryTimes[queryTimes.length - 1]);
-    return mockExcelData.filter(d => d.queryTime === selectedTime);
-  }, [selectedTime, queryTimes]);
+    if (!selectedTime) {
+      if (queryTimes.length === 0) return excelData;
+      return excelData.filter(d => d.queryTime === queryTimes[queryTimes.length - 1]);
+    }
+    return excelData.filter(d => d.queryTime === selectedTime);
+  }, [selectedTime, queryTimes, excelData]);
 
   const brandStats: BrandStats[] = useMemo(() => {
     const brandMap = new Map<string, BrandStats>();
@@ -117,6 +141,7 @@ export default function Dashboard() {
             frequency: 0,
             avgPosition: 0,
             exposureRate: 0,
+            firstPositionRate: 0,
           });
         }
         const stats = brandMap.get(brand)!;
@@ -135,6 +160,7 @@ export default function Dashboard() {
       stats.frequency = (stats.totalAppearances / (totalQueries * 5)) * 100;
       stats.avgPosition = (stats.position1 * 1 + stats.position2 * 2 + stats.position3 * 3 + stats.position4 * 4 + stats.position5 * 5) / stats.totalAppearances;
       stats.exposureRate = (stats.totalAppearances / totalQueries) * 100;
+      stats.firstPositionRate = (stats.position1 / totalQueries) * 100;
     });
 
     return statsArray.sort((a, b) => b.totalAppearances - a.totalAppearances);
@@ -150,7 +176,7 @@ export default function Dashboard() {
     });
     
     queryTimes.forEach(time => {
-      const timeData = mockExcelData.filter(d => d.queryTime === time);
+      const timeData = excelData.filter(d => d.queryTime === time);
       timeData.forEach(row => {
         const trend = trendMap.get(row.query);
         if (trend) {
@@ -166,7 +192,7 @@ export default function Dashboard() {
     });
 
     return Array.from(trendMap.values());
-  }, [queryTimes, allQueries, projectBrand]);
+  }, [queryTimes, allQueries, projectBrand, excelData]);
 
   const currentQueryTrend = useMemo(() => {
     return queryTrends.find(t => t.query === selectedQuery) || queryTrends[0];
@@ -194,6 +220,7 @@ export default function Dashboard() {
     });
     
     const exposureRate = (totalAppearances / currentData.length) * 100;
+    const firstPositionRate = (position1 / currentData.length) * 100;
     const avgPosition = totalAppearances > 0 
       ? (position1 * 1 + position2 * 2 + position3 * 3 + position4 * 4 + position5 * 5) / totalAppearances 
       : 0;
@@ -206,6 +233,7 @@ export default function Dashboard() {
       position4,
       position5,
       exposureRate,
+      firstPositionRate,
       avgPosition,
     };
   };
@@ -335,6 +363,11 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-blue-600">{projectBrandStats?.exposureRate?.toFixed(1) || 0}%</p>
                 <p className="text-gray-400 text-xs">出现次数/总查询次数</p>
               </div>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                <p className="text-gray-500 text-sm">首位提及率</p>
+                <p className="text-3xl font-bold text-green-600">{projectBrandStats?.firstPositionRate?.toFixed(1) || 0}%</p>
+                <p className="text-gray-400 text-xs">位置1次数/总查询次数</p>
+              </div>
             </div>
           </div>
 
@@ -362,6 +395,7 @@ export default function Dashboard() {
                     <th className="text-right py-2 text-gray-500">出现次数</th>
                     <th className="text-right py-2 text-gray-500">出现频率</th>
                     <th className="text-right py-2 text-gray-500">平均排名</th>
+                    <th className="text-right py-2 text-gray-500">首位提及率</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -371,6 +405,7 @@ export default function Dashboard() {
                       <td className="text-right text-gray-600">{brand.totalAppearances}</td>
                       <td className="text-right text-gray-600">{brand.frequency.toFixed(1)}%</td>
                       <td className="text-right text-gray-600">{brand.avgPosition.toFixed(1)}</td>
+                      <td className="text-right text-green-600 font-medium">{brand.firstPositionRate.toFixed(1)}%</td>
                     </tr>
                   ))}
                 </tbody>
