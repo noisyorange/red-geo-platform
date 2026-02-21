@@ -202,29 +202,64 @@ export default function Dashboard() {
   const currentBrandStats = brandStats.find(b => b.name === projectBrand) || brandStats[0];
 
   const queryTrends: QueryTrend[] = useMemo(() => {
-    const trendMap = new Map<string, QueryTrend>();
+    const trendMap = new Map<string, Map<string, { exposureCount: number; totalCount: number; positions: number[] }>>();
     
     allQueries.forEach(query => {
-      trendMap.set(query, { query, trends: [] });
+      trendMap.set(query, new Map());
     });
     
     queryTimes.forEach(time => {
       const timeData = excelData.filter(d => d.query_time === time);
+      
       timeData.forEach(row => {
-        const trend = trendMap.get(row.query);
-        if (trend) {
-          const brands = [row.brand1, row.brand2, row.brand3, row.brand4, row.brand5];
-          const position = brands.indexOf(projectBrand);
-          trend.trends.push({
-            time,
-            exposureRate: position !== -1 ? 100 : 0,
-            position: position !== -1 ? position + 1 : 0,
-          });
+        const queryTrendMap = trendMap.get(row.query);
+        if (!queryTrendMap) return;
+        
+        let existingData = queryTrendMap.get(time);
+        if (!existingData) {
+          existingData = { exposureCount: 0, totalCount: 0, positions: [] };
+          queryTrendMap.set(time, existingData);
+        }
+        
+        existingData.totalCount++;
+        const brands = [row.brand1, row.brand2, row.brand3, row.brand4, row.brand5];
+        const position = brands.indexOf(projectBrand);
+        
+        if (position !== -1) {
+          existingData.exposureCount++;
+          existingData.positions.push(position + 1);
         }
       });
     });
 
-    return Array.from(trendMap.values());
+    const result: QueryTrend[] = [];
+    trendMap.forEach((timeMap, query) => {
+      const trends: Array<{ time: string; exposureRate: number; position: number }> = [];
+      
+      queryTimes.forEach(time => {
+        const data = timeMap.get(time);
+        if (data) {
+          const exposureRate = (data.exposureCount / data.totalCount) * 100;
+          let avgPosition: number;
+          
+          if (data.positions.length > 0) {
+            avgPosition = data.positions.reduce((a, b) => a + b, 0) / data.positions.length;
+          } else {
+            avgPosition = 6;
+          }
+          
+          trends.push({
+            time,
+            exposureRate,
+            position: avgPosition,
+          });
+        }
+      });
+      
+      result.push({ query, trends });
+    });
+    
+    return result;
   }, [queryTimes, allQueries, projectBrand, excelData]);
 
   const currentQueryTrend = useMemo(() => {
@@ -502,9 +537,22 @@ export default function Dashboard() {
                 <LineChart data={currentQueryTrend?.trends || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="time" stroke="#6b7280" />
-                  <YAxis domain={[0, 5]} reversed stroke="#6b7280" />
-                  <Tooltip formatter={(value: number) => value > 0 ? `第${value.toFixed(0)}位` : '未上榜'} />
-                  <Line type="monotone" dataKey="position" stroke="#3b82f6" strokeWidth={2} name="排名" dot={{ fill: '#3b82f6', strokeWidth: 2 }} />
+                  <YAxis domain={[1, 6]} reversed stroke="#6b7280" tickFormatter={(value) => value === 6 ? '未上榜' : `第${value}名`} />
+                  <Tooltip formatter={(value: number) => value >= 6 ? '未上榜' : `第${value.toFixed(1)}名`} />
+                  <Line type="monotone" dataKey="position" stroke="#3b82f6" strokeWidth={2} name="排名" dot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    const isNotAppeared = payload.position >= 6;
+                    return (
+                      <circle 
+                        cx={cx} 
+                        cy={cy} 
+                        r={5} 
+                        fill={isNotAppeared ? '#EF4444' : '#3b82f6'} 
+                        stroke={isNotAppeared ? '#EF4444' : '#3b82f6'} 
+                        strokeWidth={2} 
+                      />
+                    );
+                  }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
