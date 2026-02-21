@@ -119,9 +119,20 @@ export default function Dashboard() {
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       
-      if (projectData && projectData.length > 0 && projectData[0].data && projectData[0].data.length > 0) {
-        setExcelData(projectData[0].data);
-        setProjectStatus('data-ready');
+      if (projectData && projectData.length > 0) {
+        const allData: ExcelRow[] = [];
+        projectData.forEach(pd => {
+          if (pd.data && pd.data.length > 0) {
+            allData.push(...pd.data);
+          }
+        });
+        if (allData.length > 0) {
+          setExcelData(allData);
+          setProjectStatus('data-ready');
+        } else {
+          setExcelData([]);
+          setProjectStatus('data-ready');
+        }
       } else {
         setExcelData([]);
         setProjectStatus('data-ready');
@@ -143,16 +154,20 @@ export default function Dashboard() {
   }, [excelData]);
 
   useEffect(() => {
+    if (queryTimes.length > 0 && !selectedTime) {
+      const sortedTimes = [...queryTimes].sort();
+      setSelectedTime(sortedTimes[sortedTimes.length - 1]);
+    }
+  }, [queryTimes, selectedTime]);
+
+  useEffect(() => {
     if (allQueries.length > 0 && !selectedQuery) {
       setSelectedQuery(allQueries[0]);
     }
   }, [allQueries, selectedQuery]);
 
   const currentData = useMemo(() => {
-    if (!selectedTime) {
-      if (queryTimes.length === 0) return excelData;
-      return excelData.filter(d => d.query_time === queryTimes[queryTimes.length - 1]);
-    }
+    if (!selectedTime || queryTimes.length === 0) return [];
     return excelData.filter(d => d.query_time === selectedTime);
   }, [selectedTime, queryTimes, excelData]);
 
@@ -404,7 +419,6 @@ export default function Dashboard() {
               onChange={(e) => setSelectedTime(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white"
             >
-              <option value="">全部时间</option>
               {queryTimes.map(time => (
                 <option key={time} value={time}>{time}</option>
               ))}
