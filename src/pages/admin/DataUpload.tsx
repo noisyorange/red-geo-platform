@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 
 interface UploadedFile {
   name: string;
@@ -10,7 +11,7 @@ interface UploadedFile {
 
 const templateHeaders = ['序号', '查询时间', 'Query：性价比高的智能床推荐', '位置1品牌', '位置2品牌', '位置3', '位置4', '位置5', '品牌问一问输出内容', 'GEO效果总结'];
 const templateExample = [
-  ['1', '2024-01-15', '性价比高的智能床推荐', '舒达', '丝涟', '金可儿', '慕思', '喜临门', '智能床推荐：舒达、丝涟、金可儿...', '品牌在搜索结果中曝光良好'],
+  ['1', '2024-01-15', '性价比高的智能床推荐', '舒达', '丝涟', '金可儿', '慕思', '喜临门', '智能床推荐：舒达、丝涟，金可儿...', '品牌在搜索结果中曝光良好'],
   ['2', '2024-01-15', '智能床品牌排行', '舒达', '丝涟', '金可儿', '慕思', '喜临门', '智能床排行：舒达、丝涟...', '前三位置被知名品牌占据'],
   ['3', '2024-01-20', '性价比高的智能床推荐', '慕思', '舒达', '丝涟', '金可儿', '喜临门', '智能床推荐：慕思、舒达...', '慕思上升至第二'],
 ];
@@ -31,21 +32,69 @@ function downloadTemplate() {
   document.body.removeChild(link);
 }
 
+function parseCSV(content: string): any[] {
+  const lines = content.split('\n').filter(line => line.trim());
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+  const data: any[] = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
+    const row: any = {};
+    values.forEach((val, idx) => {
+      const cleanVal = val.replace(/"/g, '').trim();
+      if (headers[idx]) {
+        row[headers[idx]] = cleanVal;
+      }
+    });
+    if (Object.keys(row).length > 0) {
+      data.push(row);
+    }
+  }
+  
+  return data;
+}
+
 export default function DataUpload() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const savedData = localStorage.getItem(`project_data_${id}`);
-      if (savedData) {
-        setUploadedFiles(JSON.parse(savedData));
-      }
-    }
+    loadUploadedFiles();
   }, [id]);
+
+  const loadUploadedFiles = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('project_data')
+        .select('*')
+        .eq('project_id', parseInt(id))
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const files = data.map(d => ({
+          name: d.file_name,
+          size: '已上传',
+          uploadTime: new Date(d.created_at).toLocaleString('zh-CN'),
+          status: 'success' as const,
+        }));
+        setUploadedFiles(files);
+      }
+    } catch (err) {
+      console.error('Load files error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -70,20 +119,38 @@ export default function DataUpload() {
     }
   };
 
-  const handleFiles = (files: File[]) => {
-    const newFiles: UploadedFile[] = files.map(file => ({
-      name: file.name,
-      size: formatFileSize(file.size),
-      uploadTime: new Date().toLocaleString('zh-CN'),
-      status: 'success' as const,
-    }));
-    setUploadedFiles(prev => {
-      const updated = [...prev, ...newFiles];
-      if (id) {
-        localStorage.setItem(`project_data_${id}`, JSON.stringify(updated));
-      }
-      return updated;
-    });
+  const handleFiles = async (files: File[]) => {
+    if (!id) return;
+    
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        const parsedData = parseCSV(content);
+        
+        const newFile: UploadedFile = {
+          name: file.name,
+          size: formatFileSize(file.size),
+          uploadTime: new Date().toLocaleString('zh-CN'),
+          status: 'success',
+        };
+
+        setUploadedFiles(prev => [...prev, newFile]);
+
+        try {
+          await supabase
+            .from('project_data')
+            .insert({
+              project_id: parseInt(id),
+              file_name: file.name,
+              data: parsedData,
+            });
+        } catch (err) {
+          console.error('Save data error:', err);
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -92,14 +159,21 @@ export default function DataUpload() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const handleRemoveFile = (index: number) => {
-    setUploadedFiles(prev => {
-      const updated = prev.filter((_, i) => i !== index);
-      if (id) {
-        localStorage.setItem(`project_data_${id}`, JSON.stringify(updated));
-      }
-      return updated;
-    });
+  const handleRemoveFile = async (index: number) => {
+    if (!id) return;
+    
+    const filesToDelete = uploadedFiles[index];
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+
+    try {
+      await supabase
+        .from('project_data')
+        .delete()
+        .eq('project_id', parseInt(id))
+        .eq('file_name', filesToDelete.name);
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
   };
 
   return (
@@ -184,7 +258,9 @@ export default function DataUpload() {
             </p>
           </div>
 
-          {uploadedFiles.length > 0 && (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">加载中...</div>
+          ) : uploadedFiles.length > 0 ? (
             <div className="mt-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">已上传文件</h3>
               <div className="space-y-3">
@@ -205,12 +281,8 @@ export default function DataUpload() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-sm ${
-                        file.status === 'success' ? 'bg-green-100 text-green-700' :
-                        file.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {file.status === 'success' ? '上传成功' : file.status === 'pending' ? '处理中' : '上传失败'}
+                      <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
+                        上传成功
                       </span>
                       <button
                         onClick={() => handleRemoveFile(index)}
@@ -225,7 +297,7 @@ export default function DataUpload() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-800 mb-2">📋 数据格式说明</h4>
@@ -233,7 +305,6 @@ export default function DataUpload() {
               <li>• 第一行必须为表头，包含：序号, 查询时间, Query, 位置1品牌, 位置2品牌, 位置3, 位置4, 位置5, 品牌问一问输出内容, GEO效果总结</li>
               <li>• Query 列支持关键词和短语</li>
               <li>• 位置1-5 填写品牌名称</li>
-              <li>• 数值列请确保格式正确</li>
               <li>• 建议点击上方"下载模板"按钮获取标准格式示例</li>
             </ul>
           </div>

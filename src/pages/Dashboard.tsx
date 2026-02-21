@@ -119,12 +119,10 @@ export default function Dashboard() {
         .from('project_data')
         .select('data')
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .order('created_at', { ascending: false });
       
-      if (projectData && projectData.data && projectData.data.length > 0) {
-        setExcelData(projectData.data);
+      if (projectData && projectData.length > 0 && projectData[0].data && projectData[0].data.length > 0) {
+        setExcelData(projectData[0].data);
         setProjectStatus('data-ready');
       } else {
         setExcelData(mockExcelData);
