@@ -54,7 +54,7 @@ export default function Register() {
         setSuccess(true);
         setTimeout(() => {
           navigate('/login');
-        }, 2000);
+        }, 1500);
       }
     } catch (err) {
       setError('注册失败，请稍后重试');
