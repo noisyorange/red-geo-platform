@@ -51,10 +51,26 @@ export default function Register() {
       }
 
       if (data.user) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
+        if (data.session) {
+          const { data: projects } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('user_email', email)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (projects && projects.length > 0) {
+            localStorage.setItem('currentProjectId', projects[0].id.toString());
+            navigate('/dashboard');
+          } else {
+            navigate('/project/apply');
+          }
+        } else {
+          setSuccess(true);
+          setTimeout(() => {
+            navigate('/login');
+          }, 1500);
+        }
       }
     } catch (err) {
       setError('注册失败，请稍后重试');
