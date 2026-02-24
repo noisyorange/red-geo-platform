@@ -70,18 +70,25 @@ export default function Login() {
     setLoading(false);
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    if (email === 'admin@geo.com' && password === '1234554321') {
+    const adminEmail = 'admin@geo.com';
+    const adminPassword = '1234554321';
+
+    if (email === adminEmail && password === adminPassword) {
       localStorage.setItem('isAdmin', 'true');
       navigate('/admin/upload');
+    } else if (!email || !password) {
+      setEmail(adminEmail);
+      setPassword(adminPassword);
+      setLoading(false);
     } else {
       setError('运营账号或密码错误');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
