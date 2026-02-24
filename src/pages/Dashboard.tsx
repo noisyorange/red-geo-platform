@@ -70,13 +70,14 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const projectId = localStorage.getItem('currentProjectId');
+      const { data: { user } } = await supabase.auth.getUser();
       
       if (!projectId) {
         const { data: projects } = await supabase
           .from('projects')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .eq('user_email', user?.email)
+          .order('created_at', { ascending: false });
         
         if (projects && projects.length > 0) {
           const project = projects[0];

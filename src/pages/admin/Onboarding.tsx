@@ -110,6 +110,8 @@ export default function ProjectApplication() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -118,6 +120,7 @@ export default function ProjectApplication() {
           industry: formData.industry,
           status: 'pending',
           form_data: formData,
+          user_email: user?.email || '',
         })
         .select()
         .single();

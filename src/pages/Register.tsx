@@ -84,7 +84,7 @@ export default function Register() {
               </svg>
             </div>
             <p className="text-green-600 font-medium">注册成功！</p>
-            <p className="text-gray-500 text-sm mt-2">请前往邮箱验证后登录</p>
+            <p className="text-gray-500 text-sm mt-2">请前往登录</p>
           </div>
         ) : (
           <form onSubmit={handleRegister} className="space-y-4">
