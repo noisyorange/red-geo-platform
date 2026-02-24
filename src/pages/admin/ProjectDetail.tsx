@@ -360,11 +360,8 @@ export default function ProjectDetail() {
             <div className="flex gap-3">
               {status === 'approved' && (
                 <button
-                  onClick={() => {
-                    localStorage.setItem('currentProjectId', projectId.toString());
-                    navigate('/dashboard');
-                  }}
-                  className="px-6 py-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                  className="px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-lg cursor-not-allowed"
+                  disabled
                 >
                   客户看板预览
                 </button>
