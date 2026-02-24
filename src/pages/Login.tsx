@@ -1,58 +1,87 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, Project } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'customer'>('customer');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     localStorage.removeItem('currentProjectId');
-  }, []);
+    
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    if (role === 'admin') {
-      if (username === 'admin' && password === '1234554321') {
-        navigate('/admin/upload');
-      } else {
-        setError('运营账号或密码错误');
-      }
+    if (!email || !password) {
+      setError('请输入邮箱和密码');
       setLoading(false);
-    } else {
-      if (username && password) {
-        try {
-          const { data: projects, error: fetchError } = await supabase
-            .from('projects')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1);
+      return;
+    }
 
-          if (fetchError) throw fetchError;
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-          if (projects && projects.length > 0) {
-            const projectId = projects[0].id;
-            localStorage.setItem('currentProjectId', projectId.toString());
-            navigate('/dashboard');
-          } else {
-            navigate('/project/apply');
-          }
-        } catch (err) {
-          console.error('Login error:', err);
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        const { data: projects, error: fetchError } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (fetchError) {
+          console.error('Fetch projects error:', fetchError);
+        }
+
+        if (projects && projects.length > 0) {
+          const projectId = projects[0].id;
+          localStorage.setItem('currentProjectId', projectId.toString());
+          navigate('/dashboard');
+        } else {
           navigate('/project/apply');
         }
-      } else {
-        setError('请输入用户名和密码');
       }
-      setLoading(false);
+    } catch (err) {
+      setError('登录失败，请稍后重试');
     }
+
+    setLoading(false);
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (email === 'admin@geo.com' && password === '1234554321') {
+      localStorage.setItem('isAdmin', 'true');
+      navigate('/admin/upload');
+    } else {
+      setError('运营账号或密码错误');
+    }
+    setLoading(false);
   };
 
   return (
@@ -61,86 +90,63 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">小红书 GEO 监控</h1>
-          <p className="text-gray-500 mt-2">服务监控管理平台</p>
+          <h1 className="text-2xl font-bold text-gray-800">欢迎回来</h1>
+          <p className="text-gray-500 mt-2">登录小红书 GEO 监控平台</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">角色选择</label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => setRole('admin')}
-                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                  role === 'admin'
-                    ? 'border-pink-500 bg-pink-50 text-pink-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                运营
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('customer')}
-                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                  role === 'customer'
-                    ? 'border-pink-500 bg-pink-50 text-pink-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                客户
-              </button>
-            </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
+            {error}
           </div>
+        )}
 
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">邮箱</label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
-              placeholder="请输入用户名"
-              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
+              placeholder="请输入邮箱地址"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">密码</label>
+            <label className="block text-gray-700 text-sm font-medium mb-2">密码</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
               placeholder="请输入密码"
-              required
             />
           </div>
-
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium rounded-lg hover:from-pink-600 hover:to-red-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-pink-500 to-red-500 text-white py-3 rounded-lg font-medium hover:from-pink-600 hover:to-red-600 transition disabled:opacity-50"
           >
             {loading ? '登录中...' : '登录'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <span className="text-gray-500">还没有账号？</span>
+        <div className="text-center mt-4">
+          <span className="text-gray-500 text-sm">没有账号？</span>
+          <a href="/register" className="text-pink-500 text-sm font-medium hover:underline ml-1">立即注册</a>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-center text-gray-400 text-xs mb-4">运营管理入口</p>
           <button
-            onClick={() => navigate('/register')}
-            className="ml-1 text-pink-500 hover:text-pink-600 font-medium"
+            onClick={handleAdminLogin}
+            className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition"
           >
-            立即注册
+            运营账号登录
           </button>
         </div>
       </div>

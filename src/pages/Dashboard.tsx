@@ -55,7 +55,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadProjectData();
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      loadProjectData();
+    };
+    checkAuth();
   }, []);
 
   const loadProjectData = async () => {
@@ -387,7 +395,16 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">品牌客户</span>
-            <button onClick={() => { localStorage.removeItem('currentProjectId'); navigate('/login'); }} className="px-4 py-2 text-gray-600 hover:text-gray-800">退出</button>
+            <button 
+              onClick={async () => { 
+                await supabase.auth.signOut();
+                localStorage.removeItem('currentProjectId');
+                navigate('/login'); 
+              }} 
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              退出
+            </button>
           </div>
         </div>
       </header>

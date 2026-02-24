@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function Register() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'customer'>('customer');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!username || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword) {
       setError('请填写所有字段');
       return;
     }
@@ -29,15 +30,37 @@ export default function Register() {
       return;
     }
 
-    if (role === 'admin') {
-      setError('运营账号请联系管理员分配');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('请输入有效的邮箱地址');
       return;
     }
 
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/project/apply');
-    }, 1500);
+    setLoading(true);
+
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
+    } catch (err) {
+      setError('注册失败，请稍后重试');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -60,99 +83,64 @@ export default function Register() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-lg font-medium text-gray-800">注册成功！</p>
-            <p className="text-gray-500 mt-2">正在跳转到登录页...</p>
+            <p className="text-green-600 font-medium">注册成功！</p>
+            <p className="text-gray-500 text-sm mt-2">请前往邮箱验证后登录</p>
           </div>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">注册角色</label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('admin')}
-                  className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                    role === 'admin'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                  disabled
-                >
-                  运营
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('customer')}
-                  className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                    role === 'customer'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  客户
-                </button>
+          <form onSubmit={handleRegister} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
               </div>
-              <p className="text-xs text-gray-400 mt-1">运营账号由管理员分配</p>
-            </div>
+            )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">邮箱</label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
-                placeholder="请输入用户名"
-                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
+                placeholder="请输入邮箱地址"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">密码</label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">密码</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
                 placeholder="请输入密码（至少6位）"
-                required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">确认密码</label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">确认密码</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
                 placeholder="请再次输入密码"
-                required
               />
             </div>
 
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-red-500 text-white font-medium rounded-lg hover:from-pink-600 hover:to-red-600 transition-all shadow-lg hover:shadow-xl"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-pink-500 to-red-500 text-white py-3 rounded-lg font-medium hover:from-pink-600 hover:to-red-600 transition disabled:opacity-50"
             >
-              注册
+              {loading ? '注册中...' : '注册'}
             </button>
+
+            <div className="text-center mt-4">
+              <span className="text-gray-500 text-sm">已有账号？</span>
+              <a href="/login" className="text-pink-500 text-sm font-medium hover:underline ml-1">立即登录</a>
+            </div>
           </form>
         )}
-
-        <div className="mt-6 text-center">
-          <span className="text-gray-500">已有账号？</span>
-          <button
-            onClick={() => navigate('/login')}
-            className="ml-1 text-pink-500 hover:text-pink-600 font-medium"
-          >
-            立即登录
-          </button>
-        </div>
       </div>
     </div>
   );
