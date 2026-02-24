@@ -112,6 +112,17 @@ export default function ProjectApplication() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const { data: existingProjects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('user_email', user?.email);
+      
+      if (existingProjects && existingProjects.length > 0) {
+        alert('您已提交过项目，请等待审核或联系运营人员');
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('projects')
         .insert({
