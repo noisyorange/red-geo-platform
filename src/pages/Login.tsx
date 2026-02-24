@@ -48,6 +48,7 @@ export default function Login() {
         const { data: projects, error: fetchError } = await supabase
           .from('projects')
           .select('*')
+          .eq('user_email', data.user.email)
           .order('created_at', { ascending: false })
           .limit(1);
 
