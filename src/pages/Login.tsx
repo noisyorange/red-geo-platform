@@ -140,6 +140,10 @@ export default function Login() {
           <a href="/register" className="text-pink-500 text-sm font-medium hover:underline ml-1">立即注册</a>
         </div>
 
+        <div className="mt-6 text-center">
+          <a href="/" className="text-gray-500 text-sm hover:text-pink-500">返回首页</a>
+        </div>
+
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-center text-gray-400 text-xs mb-4">运营管理入口</p>
           <button

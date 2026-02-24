@@ -529,12 +529,20 @@ export default function ProjectApplication() {
           <h2 className="text-2xl font-bold text-gray-800 mb-4">提交成功！</h2>
           <p className="text-gray-500 mb-6">您的项目信息已提交，等待运营人员审核。</p>
           <p className="text-sm text-gray-400 mb-6">审核结果将短信通知您，请留意</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            返回登录
-          </button>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+            >
+              返回首页
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              返回登录
+            </button>
+          </div>
         </div>
       </div>
     );

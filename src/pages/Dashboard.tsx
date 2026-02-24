@@ -368,12 +368,19 @@ export default function Dashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">监控数据获取中</h2>
-          <p className="text-gray-500 mb-2">您的项目已立项成功，数据正在爬取中。</p>
-          <p className="text-sm text-gray-400 mb-6">请耐心等待，数据准备完成后将自动展示监控看板</p>
-          <button onClick={() => { localStorage.removeItem('currentProjectId'); navigate('/login'); }} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-            退出
-          </button>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">等待审核</h2>
+          <p className="text-gray-500 mb-2">您的项目信息已提交，正在等待运营人员审核。</p>
+          <p className="text-sm text-gray-400 mb-6">审核结果将通过短信通知您</p>
+          <button 
+              onClick={async () => { 
+                await supabase.auth.signOut();
+                localStorage.removeItem('currentProjectId');
+                navigate('/login'); 
+              }} 
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              退出登录
+            </button>
         </div>
       </div>
     );
