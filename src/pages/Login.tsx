@@ -174,10 +174,6 @@ export default function Login() {
           <a href="/register" className="text-pink-500 text-sm font-medium hover:underline ml-1">立即注册</a>
         </div>
 
-        <div className="mt-6 text-center">
-          <a href="/" className="text-gray-500 text-sm hover:text-pink-500">返回首页</a>
-        </div>
-
         <div className="mt-6 pt-6 border-t border-gray-100">
           {showAdminLogin ? (
             <form onSubmit={handleAdminLoginSubmit} className="bg-gray-50 -mx-8 px-8 pb-6 pt-4 rounded-b-2xl">
