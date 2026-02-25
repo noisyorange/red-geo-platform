@@ -8,6 +8,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
 
   useEffect(() => {
     localStorage.removeItem('currentProjectId');
@@ -71,23 +76,26 @@ export default function Login() {
     setLoading(false);
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setAdminError('');
+    setAdminLoading(true);
+
+    if (!adminEmail || !adminPassword) {
+      setAdminError('请输入运营账号和密码');
+      setAdminLoading(false);
+      return;
+    }
     
     try {
-      const adminEmail = 'admin@geo.com';
-      const adminPassword = '1234554321';
-      
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: adminEmail,
         password: adminPassword,
       });
 
       if (signInError) {
-        setError(signInError.message);
-        setLoading(false);
+        setAdminError('账号或密码错误');
+        setAdminLoading(false);
         return;
       }
 
@@ -96,10 +104,10 @@ export default function Login() {
         navigate('/admin/upload');
       }
     } catch (err) {
-      setError('登录失败，请稍后重试');
+      setAdminError('登录失败，请稍后重试');
     }
     
-    setLoading(false);
+    setAdminLoading(false);
   };
 
   return (
@@ -163,13 +171,56 @@ export default function Login() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-center text-gray-400 text-xs mb-4">运营管理入口</p>
-          <button
-            onClick={handleAdminLogin}
-            className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition"
-          >
-            运营账号登录
-          </button>
+          {showAdminLogin ? (
+            <form onSubmit={handleAdminLoginSubmit}>
+              <p className="text-center text-gray-500 text-xs mb-4">运营管理登录</p>
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 outline-none text-sm"
+                  placeholder="运营账号"
+                />
+              </div>
+              <div className="mb-3">
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 outline-none text-sm"
+                  placeholder="运营密码"
+                />
+              </div>
+              {adminError && (
+                <p className="text-red-500 text-xs mb-3 text-center">{adminError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={adminLoading}
+                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition disabled:opacity-50"
+              >
+                {adminLoading ? '登录中...' : '登录'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowAdminLogin(false); setAdminError(''); }}
+                className="w-full mt-2 text-gray-500 text-xs hover:text-gray-700"
+              >
+                取消
+              </button>
+            </form>
+          ) : (
+            <>
+              <p className="text-center text-gray-400 text-xs mb-4">运营管理入口</p>
+              <button
+                onClick={() => setShowAdminLogin(true)}
+                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition"
+              >
+                运营账号登录
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
