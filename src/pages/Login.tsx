@@ -178,10 +178,10 @@ export default function Login() {
           <a href="/" className="text-gray-500 text-sm hover:text-pink-500">返回首页</a>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-gray-100">
           {showAdminLogin ? (
-            <form onSubmit={handleAdminLoginSubmit}>
-              <p className="text-center text-gray-500 text-xs mb-4">运营管理登录</p>
+            <form onSubmit={handleAdminLoginSubmit} className="bg-gray-50 -mx-8 px-8 pb-6 pt-4 rounded-b-2xl">
+              <p className="text-center text-gray-600 text-sm mb-4 font-medium">运营管理登录</p>
               <div className="mb-3">
                 <input
                   type="text"
@@ -203,31 +203,33 @@ export default function Login() {
               {adminError && (
                 <p className="text-red-500 text-xs mb-3 text-center">{adminError}</p>
               )}
-              <button
-                type="submit"
-                disabled={adminLoading}
-                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition disabled:opacity-50"
-              >
-                {adminLoading ? '登录中...' : '登录'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowAdminLogin(false); setAdminError(''); }}
-                className="w-full mt-2 text-gray-500 text-xs hover:text-gray-700"
-              >
-                取消
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={adminLoading}
+                  className="flex-1 bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition disabled:opacity-50"
+                >
+                  {adminLoading ? '登录中...' : '登录'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAdminLogin(false); setAdminError(''); }}
+                  className="px-4 py-2 text-gray-500 text-sm hover:text-gray-700"
+                >
+                  取消
+                </button>
+              </div>
             </form>
           ) : (
-            <>
-              <p className="text-center text-gray-400 text-xs mb-4">运营管理入口</p>
-              <button
-                onClick={() => setShowAdminLogin(true)}
-                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm hover:bg-gray-900 transition"
-              >
-                运营账号登录
-              </button>
-            </>
+            <button
+              onClick={() => setShowAdminLogin(true)}
+              className="w-full text-gray-400 text-xs hover:text-gray-500 flex items-center justify-center gap-1"
+            >
+              <span>运营管理入口</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           )}
         </div>
       </div>

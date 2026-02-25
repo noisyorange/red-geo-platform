@@ -346,6 +346,12 @@ export default function Dashboard() {
   }
 
   if (projectStatus === 'no-project') {
+    const handleLogout = async () => {
+      await supabase.auth.signOut();
+      localStorage.removeItem('currentProjectId');
+      navigate('/login');
+    };
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md border border-gray-200">
@@ -356,9 +362,14 @@ export default function Dashboard() {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">暂无项目</h2>
           <p className="text-gray-500 mb-6">您还没有提交项目申请，请先提交项目信息。</p>
-          <button onClick={() => navigate('/project/apply')} className="px-6 py-3 bg-pink-500 text-white font-medium rounded-lg hover:bg-pink-600">
-            提交项目申请
-          </button>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => navigate('/project/apply')} className="w-full px-6 py-3 bg-pink-500 text-white font-medium rounded-lg hover:bg-pink-600">
+              提交项目申请
+            </button>
+            <button onClick={handleLogout} className="w-full px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300">
+              退出登录
+            </button>
+          </div>
         </div>
       </div>
     );
