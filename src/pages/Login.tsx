@@ -109,7 +109,7 @@ export default function Login() {
 
       if (data.user) {
         localStorage.setItem('isAdmin', 'true');
-        navigate('/admin/upload');
+        navigate('/admin/upload', { replace: true });
       }
     } catch (err) {
       setAdminError('登录失败，请稍后重试');
