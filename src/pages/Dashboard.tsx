@@ -72,12 +72,17 @@ export default function Dashboard() {
       const projectId = localStorage.getItem('currentProjectId');
       const { data: { user } } = await supabase.auth.getUser();
       
+      console.log('Dashboard - 用户信息:', user);
+      console.log('Dashboard - localStorage projectId:', projectId);
+      
       if (!projectId) {
-        const { data: projects } = await supabase
+        const { data: projects, error } = await supabase
           .from('projects')
           .select('*')
           .eq('user_email', user?.email)
           .order('created_at', { ascending: false });
+        
+        console.log('Dashboard - 按邮箱查询结果:', projects, error);
         
         if (projects && projects.length > 0) {
           const project = projects[0];
