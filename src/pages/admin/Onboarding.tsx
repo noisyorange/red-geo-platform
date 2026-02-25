@@ -2,13 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
-useEffect(() => {
-  const isAdmin = localStorage.getItem('isAdmin') === 'true';
-  if (isAdmin) {
-    window.location.href = '/admin/upload';
-  }
-}, []);
-
 interface FormData {
   industry: string;
   brandName: string;
