@@ -50,15 +50,23 @@ export default function Login() {
       }
 
       if (data.user) {
+        const userEmail = data.user.email;
+        console.log('用户邮箱:', userEmail);
+        
         const { data: projects, error: fetchError } = await supabase
           .from('projects')
           .select('*')
-          .eq('user_email', data.user.email)
+          .eq('user_email', userEmail)
           .order('created_at', { ascending: false })
           .limit(1);
 
+        console.log('查询结果:', projects, fetchError);
+
         if (fetchError) {
           console.error('Fetch projects error:', fetchError);
+          setError('获取项目失败，请重试');
+          setLoading(false);
+          return;
         }
 
         if (projects && projects.length > 0) {
