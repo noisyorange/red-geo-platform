@@ -71,17 +71,35 @@ export default function Login() {
     setLoading(false);
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     
-    const adminEmail = 'admin@geo.com';
-    const adminPassword = '1234554321';
+    try {
+      const adminEmail = 'admin@geo.com';
+      const adminPassword = '1234554321';
+      
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword,
+      });
 
-    setEmail(adminEmail);
-    setPassword(adminPassword);
-    localStorage.setItem('isAdmin', 'true');
-    navigate('/admin/upload');
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        localStorage.setItem('isAdmin', 'true');
+        navigate('/admin/upload');
+      }
+    } catch (err) {
+      setError('登录失败，请稍后重试');
+    }
+    
+    setLoading(false);
   };
 
   return (
