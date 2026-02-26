@@ -562,26 +562,26 @@ export default function ProjectApplication() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => navigate('/login')}
-              className="text-gray-600 hover:text-gray-800"
+              className="text-gray-600 hover:text-gray-800 p-1"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold text-gray-800">项目信息确认表</h1>
+            <h1 className="text-base sm:text-xl font-bold text-gray-800">项目信息确认表</h1>
           </div>
-          <span className="text-gray-500 text-sm">请完整填写以下信息</span>
+          <span className="text-gray-500 text-xs sm:text-sm">请完整填写以下信息</span>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          <aside className="w-64 flex-shrink-0">
-            <nav className="space-y-2">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+          <aside className="w-full lg:w-64 flex-shrink-0">
+            <nav className="space-y-2 overflow-x-auto pb-2">
               {modules.map((module) => (
                 <button
                   key={module.id}
