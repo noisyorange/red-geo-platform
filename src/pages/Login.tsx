@@ -74,7 +74,10 @@ export default function Login() {
           localStorage.setItem('currentProjectId', projectId.toString());
           navigate('/dashboard');
         } else {
-          navigate('/project/apply');
+          setError('账号不存在，请先注册或使用运营人员登录入口');
+          setLoading(false);
+          await supabase.auth.signOut();
+          return;
         }
       }
     } catch (err) {
