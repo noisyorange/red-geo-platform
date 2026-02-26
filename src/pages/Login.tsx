@@ -74,7 +74,7 @@ export default function Login() {
           localStorage.setItem('currentProjectId', projectId.toString());
           navigate('/dashboard');
         } else {
-          setError('账号不存在，请先注册或使用运营人员登录入口');
+          setError('账号不存在，请注册账号');
           setLoading(false);
           await supabase.auth.signOut();
           return;
