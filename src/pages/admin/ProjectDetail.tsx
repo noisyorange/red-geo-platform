@@ -50,6 +50,7 @@ export default function ProjectDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasData, setHasData] = useState(false);
 
   useEffect(() => {
     loadProject();
@@ -58,11 +59,20 @@ export default function ProjectDetail() {
   const loadProject = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
+      const [projectRes, dataRes] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .single(),
+        supabase
+          .from('project_data')
+          .select('id')
+          .eq('project_id', projectId)
+          .limit(1)
+      ]);
+
+      const { data, error } = projectRes;
 
       if (error) throw error;
 
@@ -70,6 +80,10 @@ export default function ProjectDetail() {
         setStatus(data.status);
         setProjectData(data.form_data);
         setEditData(data.form_data);
+      }
+
+      if (dataRes.data && dataRes.data.length > 0) {
+        setHasData(true);
       }
     } catch (err) {
       console.error('Load project error:', err);
@@ -357,14 +371,26 @@ export default function ProjectDetail() {
               <h2 className="text-2xl font-bold text-gray-800">{projectData.brandName}</h2>
               <p className="text-gray-500 mt-1">{projectData.productName} · {industryName}</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               {status === 'approved' && (
-                <button
-                  className="px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-lg cursor-not-allowed"
-                  disabled
-                >
-                  客户看板预览
-                </button>
+                hasData ? (
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('currentProjectId', projectId.toString());
+                      window.open('/dashboard', '_blank');
+                    }}
+                    className="px-6 py-3 bg-pink-500 text-white font-medium rounded-lg hover:bg-pink-600 transition-colors"
+                  >
+                    客户看板预览
+                  </button>
+                ) : (
+                  <button
+                    className="px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-lg cursor-not-allowed"
+                    disabled
+                  >
+                    客户看板预览
+                  </button>
+                )
               )}
               {status === 'approved' && (
                 <button
