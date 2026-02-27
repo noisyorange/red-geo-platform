@@ -37,6 +37,32 @@ function parseCSV(content: string): any[] {
   if (lines.length < 2) return [];
   
   const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+  
+  const fieldMap: Record<string, string> = {
+    '查询时间': 'query_time',
+    '序号': 'id',
+  };
+  
+  headers.forEach((h, idx) => {
+    if (h.includes('Query')) {
+      fieldMap[h] = 'query';
+    } else if (h.includes('位置1') || h === '位置1品牌') {
+      fieldMap[h] = 'brand1';
+    } else if (h.includes('位置2') || h === '位置2品牌') {
+      fieldMap[h] = 'brand2';
+    } else if (h === '位置3') {
+      fieldMap[h] = 'brand3';
+    } else if (h === '位置4') {
+      fieldMap[h] = 'brand4';
+    } else if (h === '位置5') {
+      fieldMap[h] = 'brand5';
+    } else if (h.includes('问一问') || h.includes('输出内容')) {
+      fieldMap[h] = 'ai_content';
+    } else if (h.includes('总结') || h.includes('效果')) {
+      fieldMap[h] = 'geo_summary';
+    }
+  });
+  
   const data: any[] = [];
   
   for (let i = 1; i < lines.length; i++) {
@@ -44,8 +70,10 @@ function parseCSV(content: string): any[] {
     const row: any = {};
     values.forEach((val, idx) => {
       const cleanVal = val.replace(/"/g, '').trim();
-      if (headers[idx]) {
-        row[headers[idx]] = cleanVal;
+      const originalHeader = headers[idx];
+      const mappedField = fieldMap[originalHeader];
+      if (mappedField) {
+        row[mappedField] = cleanVal;
       }
     });
     if (Object.keys(row).length > 0) {
