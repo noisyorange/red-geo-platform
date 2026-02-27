@@ -38,56 +38,50 @@ function parseCSV(content: string): any[] {
   
   const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
   
-  const fieldMap: Record<string, string> = {
-    '查询时间': 'query_time',
-    '序号': 'id',
-    'GEO效果总结': 'geo_summary',
-  };
-  
-  headers.forEach((h, idx) => {
-    if (h.includes('Query') || h.startsWith('Query')) {
-      fieldMap[h] = 'query';
-    } else if (h.includes('位置1') || h === '位置1品牌') {
-      fieldMap[h] = 'brand1';
-    } else if (h.includes('位置2') || h === '位置2品牌') {
-      fieldMap[h] = 'brand2';
-    } else if (h.includes('位置3') || h === '位置3') {
-      fieldMap[h] = 'brand3';
-    } else if (h.includes('位置4') || h === '位置4') {
-      fieldMap[h] = 'brand4';
-    } else if (h.includes('位置5') || h === '位置5') {
-      fieldMap[h] = 'brand5';
-    } else if (h.includes('问一问') || h.includes('输出内容')) {
-      fieldMap[h] = 'ai_content';
-    } else if (h.includes('总结') || h.includes('效果') || h === 'GEO效果总结') {
-      fieldMap[h] = 'geo_summary';
-    }
-  });
-  
-  console.log('CSV解析 - 字段映射:', fieldMap);
-  
   const data: any[] = [];
   
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
-    if (values.length < 5) continue;
-    
     const row: any = {};
-    values.forEach((val, idx) => {
-      const cleanVal = val.replace(/"/g, '').trim();
-      const originalHeader = headers[idx];
-      const mappedField = fieldMap[originalHeader];
-      if (mappedField) {
-        row[mappedField] = cleanVal;
+    let inQuotes = false;
+    let currentField = '';
+    let fieldIndex = 0;
+    
+    for (let j = 0; j < lines[i].length; j++) {
+      const char = lines[i][j];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        const header = headers[fieldIndex] || '';
+        row[getMappedField(header)] = currentField.replace(/"/g, '').trim();
+        currentField = '';
+        fieldIndex++;
+      } else {
+        currentField += char;
       }
-    });
+    }
+    row[getMappedField(headers[fieldIndex] || '')] = currentField.replace(/"/g, '').trim();
+    
     if (row.query_time) {
-      console.log('CSV解析 - 有效数据行:', row);
       data.push(row);
     }
   }
   
   return data;
+}
+
+function getMappedField(header: string): string {
+  if (header.includes('查询时间') || header === '查询时间') return 'query_time';
+  if (header.includes('序号') || header === '序号') return 'id';
+  if (header.includes('Query')) return 'query';
+  if (header.includes('位置1') || header === '位置1品牌') return 'brand1';
+  if (header.includes('位置2') || header === '位置2品牌') return 'brand2';
+  if (header.includes('位置3')) return 'brand3';
+  if (header.includes('位置4')) return 'brand4';
+  if (header.includes('位置5')) return 'brand5';
+  if (header.includes('问一问') || header.includes('输出内容')) return 'ai_content';
+  if (header.includes('总结') || header.includes('效果')) return 'geo_summary';
+  return '';
 }
 
 export default function DataUpload() {
