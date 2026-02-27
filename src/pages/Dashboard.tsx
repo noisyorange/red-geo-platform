@@ -302,7 +302,11 @@ export default function Dashboard() {
     return queryTrends.find(t => t.query === selectedQuery) || queryTrends[0];
   }, [queryTrends, selectedQuery]);
 
-  const currentGeoSummary = currentData[0]?.geo_summary || '暂无数据';
+  const currentGeoSummary = useMemo(() => {
+    console.log('Dashboard - currentData:', currentData);
+    console.log('Dashboard - currentData[0]:', currentData[0]);
+    return currentData[0]?.geo_summary || '暂无数据';
+  }, [currentData]);
 
   const getProjectBrandStats = () => {
     if (!projectBrand || !currentData.length) return null;
