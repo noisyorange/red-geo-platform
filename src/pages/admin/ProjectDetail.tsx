@@ -44,7 +44,7 @@ export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const projectId = parseInt(id || '0');
-  const [status, setStatus] = useState<'pending' | 'approved'>('pending');
+  const [status, setStatus] = useState<'pending' | 'approved' | 'deleted'>('pending');
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [projectData, setProjectData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -118,6 +118,26 @@ export default function ProjectDetail() {
       setShowApproveConfirm(false);
     } catch (err) {
       console.error('Approve error:', err);
+      alert('操作失败，请重试');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('确定要删除此项目吗？删除后可在列表页的"已删除"分类中查看。')) {
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status: 'deleted', updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      alert('项目已删除');
+      navigate('/admin/upload');
+    } catch (err) {
+      console.error('Delete error:', err);
       alert('操作失败，请重试');
     }
   };
@@ -440,15 +460,50 @@ export default function ProjectDetail() {
         <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-800">项目信息</h3>
-            {!isEditing && (
+            {!isEditing && status !== 'deleted' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-pink-600 hover:bg-pink-50 rounded-lg"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  编辑信息
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  删除
+                </button>
+              </div>
+            )}
+            {status === 'deleted' && (
               <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 text-pink-600 hover:bg-pink-50 rounded-lg"
+                onClick={async () => {
+                  if (!window.confirm('确定要恢复此项目吗？')) return;
+                  try {
+                    const { error } = await supabase
+                      .from('projects')
+                      .update({ status: 'approved', updated_at: new Date().toISOString() })
+                      .eq('id', projectId);
+                    if (error) throw error;
+                    setStatus('approved');
+                    alert('项目已恢复');
+                  } catch (err) {
+                    alert('操作失败');
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                编辑信息
+                恢复项目
               </button>
             )}
           </div>

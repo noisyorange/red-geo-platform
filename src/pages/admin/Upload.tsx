@@ -5,7 +5,7 @@ import { supabase, Project } from '../../lib/supabase';
 export default function ProjectList() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'deleted'>('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,6 +36,7 @@ export default function ProjectList() {
 
   const pendingCount = projects.filter(p => p.status === 'pending').length;
   const approvedCount = projects.filter(p => p.status === 'approved').length;
+  const deletedCount = projects.filter(p => p.status === 'deleted').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +58,7 @@ export default function ProjectList() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div 
             onClick={() => setFilter('all')}
             className={`bg-white rounded-xl shadow-sm p-6 cursor-pointer transition-all ${filter === 'all' ? 'ring-2 ring-pink-500' : 'hover:shadow-md'}`}
@@ -101,6 +102,21 @@ export default function ProjectList() {
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-800">{loading ? '...' : approvedCount}</p>
+          </div>
+
+          <div 
+            onClick={() => setFilter('deleted')}
+            className={`bg-white rounded-xl shadow-sm p-6 cursor-pointer transition-all ${filter === 'deleted' ? 'ring-2 ring-pink-500' : 'hover:shadow-md'}`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-gray-500 text-sm">已删除</span>
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800">{loading ? '...' : deletedCount}</p>
           </div>
         </div>
 

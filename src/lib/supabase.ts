@@ -10,7 +10,7 @@ export interface Project {
   brand_name: string;
   product_name: string;
   industry: string;
-  status: 'pending' | 'approved';
+  status: 'pending' | 'approved' | 'deleted';
   form_data: Record<string, string>;
   submit_time: string;
   created_at: string;
