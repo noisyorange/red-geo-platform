@@ -164,8 +164,10 @@ export default function Dashboard() {
   };
 
   const queryTimes = useMemo(() => {
-    const times = [...new Set(excelData.map(d => d.query_time))];
-    const validTimes = times.filter(t => t && (t.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/) || t.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/)));
+    const times = [...new Set(excelData.map(d => String(d.query_time).trim()))];
+    console.log('Dashboard - 所有query_time:', times);
+    const validTimes = times.filter(t => t && t.length > 0);
+    console.log('Dashboard - 过滤后validTimes:', validTimes);
     return validTimes.sort();
   }, [excelData]);
 
