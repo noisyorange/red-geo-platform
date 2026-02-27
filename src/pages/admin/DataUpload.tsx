@@ -41,6 +41,7 @@ function parseCSV(content: string): any[] {
   const fieldMap: Record<string, string> = {
     '查询时间': 'query_time',
     '序号': 'id',
+    'GEO效果总结': 'geo_summary',
   };
   
   headers.forEach((h, idx) => {
@@ -58,10 +59,12 @@ function parseCSV(content: string): any[] {
       fieldMap[h] = 'brand5';
     } else if (h.includes('问一问') || h.includes('输出内容')) {
       fieldMap[h] = 'ai_content';
-    } else if (h.includes('总结') || h.includes('效果')) {
+    } else if (h.includes('总结') || h.includes('效果') || h === 'GEO效果总结') {
       fieldMap[h] = 'geo_summary';
     }
   });
+  
+  console.log('CSV解析 - 字段映射:', fieldMap);
   
   const data: any[] = [];
   
@@ -79,6 +82,7 @@ function parseCSV(content: string): any[] {
       }
     });
     if (row.query_time) {
+      console.log('CSV解析 - 有效数据行:', row);
       data.push(row);
     }
   }
