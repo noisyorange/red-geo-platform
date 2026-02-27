@@ -140,6 +140,7 @@ export default function Dashboard() {
         const allData: ExcelRow[] = [];
         projectData.forEach(pd => {
           console.log('Dashboard - 单条数据:', pd.data);
+          console.log('Dashboard - 数据字段名:', pd.data && pd.data.length > 0 ? Object.keys(pd.data[0]) : []);
           if (pd.data && pd.data.length > 0) {
             allData.push(...pd.data);
           }
