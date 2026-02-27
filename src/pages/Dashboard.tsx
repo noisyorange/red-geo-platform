@@ -165,11 +165,13 @@ export default function Dashboard() {
 
   const queryTimes = useMemo(() => {
     const times = [...new Set(excelData.map(d => d.query_time))];
-    return times.sort();
+    const validTimes = times.filter(t => t && (t.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/) || t.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/)));
+    return validTimes.sort();
   }, [excelData]);
 
   const allQueries = useMemo(() => {
-    return [...new Set(excelData.map(d => d.query))];
+    const queries = [...new Set(excelData.map(d => d.query))];
+    return queries.filter(q => q && q.length > 0 && q.length < 100);
   }, [excelData]);
 
   useEffect(() => {
