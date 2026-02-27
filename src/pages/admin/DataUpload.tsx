@@ -44,17 +44,17 @@ function parseCSV(content: string): any[] {
   };
   
   headers.forEach((h, idx) => {
-    if (h.includes('Query')) {
+    if (h.includes('Query') || h.startsWith('Query')) {
       fieldMap[h] = 'query';
     } else if (h.includes('位置1') || h === '位置1品牌') {
       fieldMap[h] = 'brand1';
     } else if (h.includes('位置2') || h === '位置2品牌') {
       fieldMap[h] = 'brand2';
-    } else if (h === '位置3') {
+    } else if (h.includes('位置3') || h === '位置3') {
       fieldMap[h] = 'brand3';
-    } else if (h === '位置4') {
+    } else if (h.includes('位置4') || h === '位置4') {
       fieldMap[h] = 'brand4';
-    } else if (h === '位置5') {
+    } else if (h.includes('位置5') || h === '位置5') {
       fieldMap[h] = 'brand5';
     } else if (h.includes('问一问') || h.includes('输出内容')) {
       fieldMap[h] = 'ai_content';
