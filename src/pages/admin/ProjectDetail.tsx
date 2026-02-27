@@ -440,7 +440,7 @@ export default function ProjectDetail() {
         <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-800">项目信息</h3>
-            {!isEditing && status === 'pending' && (
+            {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-2 px-4 py-2 text-pink-600 hover:bg-pink-50 rounded-lg"

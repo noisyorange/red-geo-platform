@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "^2.47.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
+    "papaparse": "^5.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.4.1",

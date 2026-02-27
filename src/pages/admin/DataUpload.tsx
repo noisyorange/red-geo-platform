@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import Papa from 'papaparse';
 
 interface UploadedFile {
   name: string;
@@ -32,56 +33,41 @@ function downloadTemplate() {
   document.body.removeChild(link);
 }
 
-function parseCSV(content: string): any[] {
-  const lines = content.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return [];
-  
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-  
-  const data: any[] = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const row: any = {};
-    let inQuotes = false;
-    let currentField = '';
-    let fieldIndex = 0;
-    
-    for (let j = 0; j < lines[i].length; j++) {
-      const char = lines[i][j];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        const header = headers[fieldIndex] || '';
-        row[getMappedField(header)] = currentField.replace(/"/g, '').trim();
-        currentField = '';
-        fieldIndex++;
-      } else {
-        currentField += char;
-      }
-    }
-    row[getMappedField(headers[fieldIndex] || '')] = currentField.replace(/"/g, '').trim();
-    
-    if (row.query_time) {
-      data.push(row);
-    }
-  }
-  
-  return data;
-}
-
 function getMappedField(header: string): string {
-  if (header.includes('查询时间') || header === '查询时间') return 'query_time';
-  if (header.includes('序号') || header === '序号') return 'id';
+  if (header.includes('查询时间')) return 'query_time';
+  if (header.includes('序号')) return 'id';
   if (header.includes('Query')) return 'query';
-  if (header.includes('位置1') || header === '位置1品牌') return 'brand1';
-  if (header.includes('位置2') || header === '位置2品牌') return 'brand2';
+  if (header.includes('位置1')) return 'brand1';
+  if (header.includes('位置2')) return 'brand2';
   if (header.includes('位置3')) return 'brand3';
   if (header.includes('位置4')) return 'brand4';
   if (header.includes('位置5')) return 'brand5';
   if (header.includes('问一问') || header.includes('输出内容')) return 'ai_content';
   if (header.includes('总结') || header.includes('效果')) return 'geo_summary';
   return '';
+}
+
+function parseCSV(content: string): any[] {
+  const result = Papa.parse(content, {
+    header: true,
+    skipEmptyLines: true,
+  });
+  
+  console.log('PapaParse - 原始解析结果:', result.data);
+  
+  const formattedData = result.data.map((row: any) => {
+    const newRow: any = {};
+    Object.keys(row).forEach((originalHeader) => {
+      const mappedKey = getMappedField(originalHeader);
+      if (mappedKey) {
+        newRow[mappedKey] = row[originalHeader];
+      }
+    });
+    return newRow;
+  });
+  
+  console.log('PapaParse - 映射后数据:', formattedData);
+  return formattedData;
 }
 
 export default function DataUpload() {
@@ -166,15 +152,26 @@ export default function DataUpload() {
         setUploadedFiles(prev => [...prev, newFile]);
 
         try {
-          await supabase
+          console.log('上传数据 - parsedData:', parsedData);
+          console.log('上传数据 - parsedData[0]:', parsedData[0]);
+          
+          const { error } = await supabase
             .from('project_data')
             .insert({
               project_id: parseInt(id),
               file_name: file.name,
               data: parsedData,
             });
+          
+          if (error) {
+            console.error('Save data error:', error);
+            alert('上传失败: ' + error.message);
+          } else {
+            console.log('上传成功');
+          }
         } catch (err) {
           console.error('Save data error:', err);
+          alert('上传失败，请检查文件格式');
         }
       };
       reader.readAsText(file);
