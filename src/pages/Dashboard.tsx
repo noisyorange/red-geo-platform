@@ -105,12 +105,14 @@ export default function Dashboard() {
           .single();
         
         if (project) {
+          console.log('Dashboard - 项目状态:', project.status, '品牌:', project.brand_name);
           setProjectName(project.brand_name || project.product_name);
           setProjectBrand(project.brand_name || '舒达');
           
           if (project.status === 'approved') {
             await loadProjectDataItems(project.id);
           } else {
+            console.log('Dashboard - 项目未批准，状态:', project.status);
             setProjectStatus('pending');
           }
         } else {
@@ -134,8 +136,10 @@ export default function Dashboard() {
         .order('created_at', { ascending: false });
       
       if (projectData && projectData.length > 0) {
+        console.log('Dashboard - 找到project_data记录:', projectData.length);
         const allData: ExcelRow[] = [];
         projectData.forEach(pd => {
+          console.log('Dashboard - 单条数据:', pd.data);
           if (pd.data && pd.data.length > 0) {
             allData.push(...pd.data);
           }
