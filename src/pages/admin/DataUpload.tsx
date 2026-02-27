@@ -67,6 +67,8 @@ function parseCSV(content: string): any[] {
   
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
+    if (values.length < 5) continue;
+    
     const row: any = {};
     values.forEach((val, idx) => {
       const cleanVal = val.replace(/"/g, '').trim();
@@ -76,7 +78,7 @@ function parseCSV(content: string): any[] {
         row[mappedField] = cleanVal;
       }
     });
-    if (Object.keys(row).length > 0) {
+    if (row.query_time) {
       data.push(row);
     }
   }
