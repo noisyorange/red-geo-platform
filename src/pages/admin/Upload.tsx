@@ -48,7 +48,12 @@ export default function ProjectList() {
           <div className="flex items-center gap-2 sm:gap-4">
             <span className="text-xs sm:text-base text-gray-600">运营人员</span>
             <button
-              onClick={() => navigate('/login')}
+              onClick={async () => {
+                localStorage.removeItem('isAdmin');
+                localStorage.removeItem('currentProjectId');
+                await supabase.auth.signOut();
+                navigate('/login', { replace: true });
+              }}
               className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-base text-gray-600 hover:text-gray-800"
             >
               退出
