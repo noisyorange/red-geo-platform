@@ -30,7 +30,7 @@ export default function ProjectList() {
   };
 
   const filteredProjects = projects.filter(p => {
-    if (filter === 'all') return true;
+    if (filter === 'all') return p.status !== 'deleted';
     return p.status === filter;
   });
 
@@ -141,9 +141,11 @@ export default function ProjectList() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`px-3 py-1 rounded-full text-xs sm:text-sm ${
-                      project.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+                      project.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                      project.status === 'deleted' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                     }`}>
-                      {project.status === 'pending' ? '待审核' : '已立项'}
+                      {project.status === 'pending' ? '待审核' : 
+                       project.status === 'deleted' ? '已删除' : '已立项'}
                     </span>
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

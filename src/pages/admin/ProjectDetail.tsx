@@ -132,7 +132,11 @@ export default function ProjectDetail() {
         .update({ status: 'deleted', updated_at: new Date().toISOString() })
         .eq('id', projectId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        alert('操作失败: ' + error.message);
+        return;
+      }
 
       alert('项目已删除');
       navigate('/admin/upload');
